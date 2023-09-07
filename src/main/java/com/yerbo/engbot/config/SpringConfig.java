@@ -1,4 +1,4 @@
-package com.yerbo.engbot;
+package com.yerbo.engbot.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
