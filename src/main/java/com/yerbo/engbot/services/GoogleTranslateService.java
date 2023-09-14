@@ -2,11 +2,11 @@ package com.yerbo.engbot.services;
 
 import com.google.cloud.translate.v3.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class GoogleTranslateService {
 
@@ -31,7 +31,6 @@ public class GoogleTranslateService {
                             .build();
 
             TranslateTextResponse response = client.translateText(request);
-
             for (Translation translation : response.getTranslationsList()) {
                 translate.append(translation.getTranslatedText());
             }
