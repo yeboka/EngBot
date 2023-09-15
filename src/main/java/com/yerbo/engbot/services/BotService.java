@@ -1,7 +1,10 @@
 package com.yerbo.engbot.services;
 
+import com.yerbo.engbot.enums.Status;
 import com.yerbo.engbot.models.User;
+import com.yerbo.engbot.models.Vocabulary;
 import com.yerbo.engbot.repository.UserRepository;
+import com.yerbo.engbot.repository.VocabularyRepository;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,18 +20,22 @@ public class BotService extends TelegramLongPollingBot {
     OpenAiApiService openAiApiService;
     GoogleTranslateService translateService;
     UserRepository userRepository;
+    VocabularyRepository vocabularyRepository;
+    User user;
 
     @Autowired
     public BotService(@Value("${bot.token}") String botToken,
                       @Value("${bot.name}") String botUsername,
                       OpenAiApiService openAiApiService,
                       GoogleTranslateService translateService,
-                      UserRepository userRepository) {
+                      UserRepository userRepository,
+                      VocabularyRepository vocabularyRepository) {
         super(botToken);
         this.botUsername = botUsername;
         this.openAiApiService = openAiApiService;
         this.translateService = translateService;
         this.userRepository = userRepository;
+        this.vocabularyRepository = vocabularyRepository;
     }
 
     @SneakyThrows
@@ -36,33 +43,39 @@ public class BotService extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         String text = update.getMessage().getText();
         Long chatId = update.getMessage().getChatId();
-        String username = update.getMessage().getAuthorSignature();
+        String username = update.getMessage().getChat().getUserName();
 
-        StringBuilder answer = new StringBuilder();
-        User user = User.builder()
-                .id(chatId)
-                .username(username)
+        if (userRepository.existsById(chatId)) {
+            user = userRepository.findById(chatId).orElse(null);
+        } else {
+            user = User.builder()
+                    .id(chatId)
+                    .username(username)
+                    .build();
+
+            userRepository.save(user);
+        }
+
+        String[] translate = translateService.translateText(text);
+        Vocabulary vocabularyItem = Vocabulary.builder()
+                .user(user)
+                .engWord(translate[0].toLowerCase())
+                .rusWord(translate[1].toLowerCase())
+                .status(Status.NEW)
                 .build();
 
-        userRepository.save(user);
 
+        if (text.split(" ").length == 1 && !vocabularyRepository.existsByUserAndEngWord(user, vocabularyItem.getEngWord())) {
+            vocabularyRepository.save(vocabularyItem);
 
-        String translateText = translateService.translateText(text);
-        answer.append(text).append(" - ").append(translateText);
-        answer.append("\n");
-
-        if (text.split(" ").length == 1) {
-            String definitionOfWord = openAiApiService.getDefinitionOfWord(text);
-            answer.append(definitionOfWord);
-            answer.append("\n");
-            String translateOfDefinition = translateService.translateText(definitionOfWord);
-            answer.append(translateOfDefinition);
-
-
+//            String definitionOfWord = openAiApiService.getDefinitionOfWord(text);
         }
+
+        String answer = vocabularyItem.getEngWord() + " - " + vocabularyItem.getRusWord();
+
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
-                .text(answer.toString()).build();
+                .text(answer).build();
 
         execute(message);
     }
