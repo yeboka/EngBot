@@ -45,16 +45,7 @@ public class BotService extends TelegramLongPollingBot {
         Long chatId = update.getMessage().getChatId();
         String username = update.getMessage().getChat().getUserName();
 
-        if (userRepository.existsById(chatId)) {
-            user = userRepository.findById(chatId).orElse(null);
-        } else {
-            user = User.builder()
-                    .id(chatId)
-                    .username(username)
-                    .build();
-
-            userRepository.save(user);
-        }
+        saveUser(chatId, username);
 
         String[] translate = translateService.translateText(text);
         Vocabulary vocabularyItem = Vocabulary.builder()
@@ -64,14 +55,16 @@ public class BotService extends TelegramLongPollingBot {
                 .status(Status.NEW)
                 .build();
 
+        String answer = vocabularyItem.getEngWord() + " - " + vocabularyItem.getRusWord();
 
         if (text.split(" ").length == 1 && !vocabularyRepository.existsByUserAndEngWord(user, vocabularyItem.getEngWord())) {
             vocabularyRepository.save(vocabularyItem);
 
 //            String definitionOfWord = openAiApiService.getDefinitionOfWord(text);
+//            answer += "\n" + definitionOfWord;
         }
 
-        String answer = vocabularyItem.getEngWord() + " - " + vocabularyItem.getRusWord();
+
 
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
@@ -83,5 +76,18 @@ public class BotService extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
         return botUsername;
+    }
+
+    private void saveUser(Long chatId, String username) {
+        if (userRepository.existsById(chatId)) {
+            user = userRepository.findById(chatId).orElse(null);
+        } else {
+            user = User.builder()
+                    .id(chatId)
+                    .username(username)
+                    .build();
+
+            userRepository.save(user);
+        }
     }
 }
