@@ -1,6 +1,5 @@
 package com.yerbo.engbot.aspect;
 
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.slf4j.Logger;
@@ -8,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
-import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Aspect
 @Component
@@ -23,7 +21,7 @@ public class AspectLogger {
     @Pointcut("within(com.yerbo.engbot.services.GoogleTranslateService)")
     public void googleTranslateServiceAspect(){}
     
-    @Pointcut("within(com.yerbo.engbot.services.BotService)")
+    @Pointcut("within(com.yerbo.engbot.Bot)")
     public void botServiceAspect(){}
 
     @Around("openAiServiceAspect()")
